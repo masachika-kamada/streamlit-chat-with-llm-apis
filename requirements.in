@@ -1,0 +1,16 @@
+python-dotenv
+streamlit
+langchain
+langchain_cohere
+langchain_groq
+streamlit_authenticator
+
+# pip-tools:
+#     * Python の依存関係をより簡単に管理し、requirements.txt ファイルを生成するのに役立つ
+#     * 依存関係が清潔かつ整然と管理され、特にプロジェクトが成長して複雑になったときに便利
+#     * 生成された requirements.txt は依存関係の正確なバージョンを含むため、開発環境の一貫性を保つのに役立つ
+
+# 1. pip-tools のインストール: `pip install pip-tools`
+# 2. requirements.in の作成
+# 3. requirements.txt の生成: `pip-compile requirements.in`
+# 4. 生成された requirements.txt の使用: `pip install -r requirements.txt`
