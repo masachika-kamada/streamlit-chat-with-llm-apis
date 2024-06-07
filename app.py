@@ -8,17 +8,19 @@ import streamlit_authenticator as stauth
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_cohere import ChatCohere
 from langchain_groq import ChatGroq
+from langchain_openai import AzureOpenAI
 
 load_dotenv(Path(__file__).parent / ".env")
 
 
 class ModelSelector:
     def __init__(self):
-        self.providers = ["Cohere", "Groq"]
+        self.providers = ["Cohere", "Groq", "OpenAI"]
         self.models = {
             "Cohere": ["command-r-plus", "command-r", "command", \
                        "command-light", "command-nightly", "command-light-nightly"],
             "Groq": ["llama3-70b-8192", "llama3-8b-8192"],
+            "OpenAI": ["gpt-4o", "gpt-35-turbo-16k"],
         }
 
     def select(self):
@@ -65,6 +67,8 @@ def main():
             llm = ChatGroq(model=model, temperature=0)
         elif provider == "Cohere":
             llm = ChatCohere(model=model, temperature=0)
+        elif provider == "OpenAI":
+            llm = AzureOpenAI(model=model, temperature=0)
 
         st.session_state.messages.append(HumanMessage(content=user_input))
         display_chat_history()
