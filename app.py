@@ -27,18 +27,19 @@ class ModelSelector:
     def select(self):
         with st.sidebar:
             st.sidebar.title("🧠 LLM Chat")
-            provider = st.radio("Select Provider", self.providers)
-            model = st.selectbox("Select Model", self.models[provider])
+            provider = st.radio("Select Provider", self.providers, on_change=init_messages)
+            model = st.selectbox("Select Model", self.models[provider], on_change=init_messages)
             return provider, model
 
 
 def init_messages():
-    clear_button = st.sidebar.button("Clear Conversation", key="clear")
-    if clear_button or "messages" not in st.session_state:
-        st.session_state.messages = [
-            SystemMessage(content="あなたは愉快なAIです。ユーザの入力に日本語で答えてください")
-        ]
-        st.session_state.costs = []
+    st.session_state.messages = [
+        SystemMessage(content="あなたは愉快なAIです。ユーザの入力に日本語で答えてください")
+    ]
+
+
+def clear_conversation_button():
+    st.sidebar.button("Clear Conversation", on_click=init_messages)
 
 
 def display_chat_history():
@@ -57,11 +58,13 @@ def display_stream(generater):
 
 
 def main():
-    user_input = st.chat_input("")
+    if "messages" not in st.session_state:
+        init_messages()
+
+    user_input = st.chat_input("Message...")
     model = ModelSelector()
     provider, model = model.select()
-
-    init_messages()
+    clear_conversation_button()
 
     if user_input:
         if provider == "OpenAI":
