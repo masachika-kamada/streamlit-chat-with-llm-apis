@@ -8,14 +8,17 @@ import streamlit_authenticator as stauth
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_cohere import ChatCohere
 from langchain_groq import ChatGroq
+from langchain_openai import AzureChatOpenAI
 
 load_dotenv(Path(__file__).parent / ".env")
 
 
 class ModelSelector:
     def __init__(self):
-        self.providers = ["Cohere", "Groq"]
+        self.providers = ["OpenAI", "Cohere", "Groq"]
         self.models = {
+            # デプロイ作成時、デプロイ名とモデル名が同じになるように設定
+            "OpenAI": ["gpt-4o", "gpt-35-turbo-instruct"],
             "Cohere": ["command-r-plus", "command-r", "command", \
                        "command-light", "command-nightly", "command-light-nightly"],
             "Groq": ["llama3-70b-8192", "llama3-8b-8192"],
@@ -61,7 +64,10 @@ def main():
     init_messages()
 
     if user_input:
-        if provider == "Groq":
+        if provider == "OpenAI":
+            # デプロイ名としてモデル名が使用されるので命名に注意
+            llm = AzureChatOpenAI(azure_deployment=model, temperature=0)
+        elif provider == "Groq":
             llm = ChatGroq(model=model, temperature=0)
         elif provider == "Cohere":
             llm = ChatCohere(model=model, temperature=0)
