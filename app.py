@@ -13,7 +13,7 @@ from langchain_openai import AzureChatOpenAI
 load_dotenv(Path(__file__).parent / ".env")
 
 
-class ModelSelector:
+class LLMChatManager:
     def __init__(self):
         self.providers = ["OpenAI", "Cohere", "Groq"]
         self.models = {
@@ -23,22 +23,33 @@ class ModelSelector:
                        "command-light", "command-nightly", "command-light-nightly"],
             "Groq": ["llama3-70b-8192", "llama3-8b-8192"],
         }
+        self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
+        self.provider = None
+        self.model = None
+        if "messages" not in st.session_state:
+            self.init_messages()
 
     def select(self):
         with st.sidebar:
             st.sidebar.title("🧠 LLM Chat")
-            provider = st.radio("Select Provider", self.providers)
-            model = st.selectbox("Select Model", self.models[provider])
-            return provider, model
+            self.provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
+            self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
+            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
+            self.clear_conversation_button()
 
+    def clear_conversation_button(self):
+        st.sidebar.button("Clear Conversation", on_click=self.init_messages)
 
-def init_messages():
-    clear_button = st.sidebar.button("Clear Conversation", key="clear")
-    if clear_button or "messages" not in st.session_state:
-        st.session_state.messages = [
-            SystemMessage(content="あなたは愉快なAIです。ユーザの入力に日本語で答えてください")
-        ]
-        st.session_state.costs = []
+    def init_messages(self):
+        st.session_state.messages = [SystemMessage(content=self.system_prompt)]
+
+    def get_llm_instance(self):
+        if self.provider == "OpenAI":
+            return AzureChatOpenAI(azure_deployment=self.model, temperature=0)
+        elif self.provider == "Groq":
+            return ChatGroq(model=self.model, temperature=0)
+        elif self.provider == "Cohere":
+            return ChatCohere(model=self.model, temperature=0)
 
 
 def display_chat_history():
@@ -57,20 +68,13 @@ def display_stream(generater):
 
 
 def main():
-    user_input = st.chat_input("")
-    model = ModelSelector()
-    provider, model = model.select()
+    llm_chat_manager = LLMChatManager()
+    llm_chat_manager.select()
 
-    init_messages()
+    user_input = st.chat_input("Message...")
 
     if user_input:
-        if provider == "OpenAI":
-            # デプロイ名としてモデル名が使用されるので命名に注意
-            llm = AzureChatOpenAI(azure_deployment=model, temperature=0)
-        elif provider == "Groq":
-            llm = ChatGroq(model=model, temperature=0)
-        elif provider == "Cohere":
-            llm = ChatCohere(model=model, temperature=0)
+        llm = llm_chat_manager.get_llm_instance()
 
         st.session_state.messages.append(HumanMessage(content=user_input))
         display_chat_history()
