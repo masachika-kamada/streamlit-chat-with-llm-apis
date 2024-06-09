@@ -23,23 +23,24 @@ class ModelSelector:
                        "command-light", "command-nightly", "command-light-nightly"],
             "Groq": ["llama3-70b-8192", "llama3-8b-8192"],
         }
+        self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
+        if "messages" not in st.session_state:
+            self.init_messages()
 
     def select(self):
         with st.sidebar:
             st.sidebar.title("🧠 LLM Chat")
-            provider = st.radio("Select Provider", self.providers, on_change=init_messages)
-            model = st.selectbox("Select Model", self.models[provider], on_change=init_messages)
+            provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
+            model = st.selectbox("Select Model", self.models[provider], on_change=self.init_messages)
+            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
+            self.clear_conversation_button()
             return provider, model
 
+    def clear_conversation_button(self):
+        st.sidebar.button("Clear Conversation", on_click=self.init_messages)
 
-def init_messages():
-    st.session_state.messages = [
-        SystemMessage(content="あなたは愉快なAIです。ユーザの入力に日本語で答えてください")
-    ]
-
-
-def clear_conversation_button():
-    st.sidebar.button("Clear Conversation", on_click=init_messages)
+    def init_messages(self):
+        st.session_state.messages = [SystemMessage(content=self.system_prompt)]
 
 
 def display_chat_history():
@@ -58,13 +59,10 @@ def display_stream(generater):
 
 
 def main():
-    if "messages" not in st.session_state:
-        init_messages()
-
-    user_input = st.chat_input("Message...")
     model = ModelSelector()
     provider, model = model.select()
-    clear_conversation_button()
+
+    user_input = st.chat_input("Message...")
 
     if user_input:
         if provider == "OpenAI":
