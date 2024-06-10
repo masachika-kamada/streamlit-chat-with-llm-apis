@@ -1,10 +1,9 @@
-from pathlib import Path
 import os
+from pathlib import Path
 
 import streamlit as st
-from dotenv import load_dotenv
 import streamlit_authenticator as stauth
-
+from dotenv import load_dotenv
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_cohere import ChatCohere
 from langchain_groq import ChatGroq
@@ -90,6 +89,17 @@ if __name__ == "__main__":
         layout="wide",
     )
 
+    st.markdown(
+        """
+        <style>
+        .st-emotion-cache-1jicfl2 {
+            padding-left: 35rem;
+            padding-right: 35rem;
+            min-width: 100rem;
+        }
+        </style>
+        """, unsafe_allow_html=True
+    )
     authenticator = stauth.Authenticate(
         {"usernames": {
             os.getenv("LOGIN_USERNAME"): {
