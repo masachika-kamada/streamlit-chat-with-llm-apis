@@ -1,4 +1,6 @@
+import base64
 import os
+from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
@@ -8,6 +10,7 @@ from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_cohere import ChatCohere
 from langchain_groq import ChatGroq
 from langchain_openai import AzureChatOpenAI
+from st_img_pastebutton import paste
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -35,6 +38,16 @@ class LLMChatManager:
             self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
             self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
             self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
+            image_data = paste(label="paste from clipboard",key="image_clipboard")
+
+            if image_data is not None:
+                header, encoded = image_data.split(",", 1)
+                binary_data = base64.b64decode(encoded)
+                bytes_data = BytesIO(binary_data)
+                st.image(bytes_data, caption="Uploaded Image", use_column_width=True)
+            else:
+                st.write("No image uploaded yet.")
+
             self.clear_conversation_button()
 
     def clear_conversation_button(self):
