@@ -34,6 +34,7 @@ class LLMChatManager:
             self.provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
             self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
             self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
+            self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
             self.clear_conversation_button()
 
     def clear_conversation_button(self):
@@ -44,11 +45,11 @@ class LLMChatManager:
 
     def get_llm_instance(self):
         if self.provider == "OpenAI":
-            return AzureChatOpenAI(azure_deployment=self.model, temperature=0)
+            return AzureChatOpenAI(azure_deployment=self.model, temperature=self.temperature)
         elif self.provider == "Groq":
-            return ChatGroq(model=self.model, temperature=0)
+            return ChatGroq(model=self.model, temperature=self.temperature)
         elif self.provider == "Cohere":
-            return ChatCohere(model=self.model, temperature=0)
+            return ChatCohere(model=self.model, temperature=self.temperature)
 
 
 def display_chat_history():
