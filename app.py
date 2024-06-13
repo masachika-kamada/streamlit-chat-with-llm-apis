@@ -28,6 +28,8 @@ class LLMChatManager:
         self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
         self.provider = None
         self.model = None
+        self.temperature = 0
+        self.image_url = None
         if "messages" not in st.session_state:
             self.init_messages()
 
@@ -38,10 +40,11 @@ class LLMChatManager:
             self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
             self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
             self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
-            image_data = paste(label="paste from clipboard",key="image_clipboard")
+            image_data = paste(label="paste from clipboard")
 
             if image_data is not None:
                 header, encoded = image_data.split(",", 1)
+                self.image_url = f"data:image/png;base64,{encoded}"
                 binary_data = base64.b64decode(encoded)
                 bytes_data = BytesIO(binary_data)
                 st.image(bytes_data, caption="Uploaded Image", use_column_width=True)
@@ -72,7 +75,7 @@ def display_chat_history():
                 st.markdown(message.content)
         elif isinstance(message, HumanMessage):
             with st.chat_message("user"):
-                st.markdown(message.content)
+                st.text(message.content)
 
 
 def display_stream(generater):
@@ -89,7 +92,16 @@ def main():
     if user_input:
         llm = llm_chat_manager.get_llm_instance()
 
-        st.session_state.messages.append(HumanMessage(content=user_input))
+        if llm_chat_manager.model == "gpt-4o" and llm_chat_manager.image_url is not None:
+            st.session_state.messages.append(HumanMessage(
+                content=[
+                    {"type": "text", "text": user_input},
+                    {"type": "image_url", "image_url": {"url": llm_chat_manager.image_url}}
+                ]
+            ))
+            llm_chat_manager.image_url = None
+        else:
+            st.session_state.messages.append(HumanMessage(content=user_input))
         display_chat_history()
 
         response = display_stream(llm.stream(st.session_state.messages))
@@ -103,17 +115,6 @@ if __name__ == "__main__":
         layout="wide",
     )
 
-    st.markdown(
-        """
-        <style>
-        .st-emotion-cache-1jicfl2 {
-            padding-left: 35rem;
-            padding-right: 35rem;
-            min-width: 100rem;
-        }
-        </style>
-        """, unsafe_allow_html=True
-    )
     authenticator = stauth.Authenticate(
         {"usernames": {
             os.getenv("LOGIN_USERNAME"): {
