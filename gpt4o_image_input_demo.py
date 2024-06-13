@@ -2,6 +2,7 @@ import base64
 from pathlib import Path
 
 from dotenv import load_dotenv
+from langchain.schema import HumanMessage
 from langchain_llm_streamer import stream_print
 from langchain_openai import AzureChatOpenAI
 
@@ -21,15 +22,13 @@ with open(file_path, 'rb') as image_file:
 # data URIスキームに従ってフォーマットする
 image_url = f"data:image/png;base64,{encoded_string}"
 
-# メッセージリストを作成
 messages = [
-    {
-        "role": "user",
-        "content": [
+    HumanMessage(
+        content=[
             { "type": "text", "text": "画像について説明してください" },
             { "type": "image_url", "image_url": { "url": image_url } }
         ]
-    }
+    )
 ]
 
 stream_print(llm, messages)
