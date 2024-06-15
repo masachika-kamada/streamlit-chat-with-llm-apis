@@ -235,10 +235,13 @@ sqlalchemy==2.0.29
     # via
     #   langchain
     #   langchain-community
+st-img-pastebutton==0.0.4
+    # via -r requirements.in
 streamlit==1.33.0
     # via
     #   -r requirements.in
     #   extra-streamlit-components
+    #   st-img-pastebutton
     #   streamlit-authenticator
 streamlit-authenticator==0.3.2
     # via -r requirements.in

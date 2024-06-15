@@ -4,7 +4,8 @@ langchain
 langchain-cohere
 langchain-groq
 langchain-openai
-streamlit_authenticator
+streamlit-authenticator
+st_img_pastebutton
 
 # pip-tools:
 #     * Python の依存関係をより簡単に管理し、requirements.txt ファイルを生成するのに役立つ
