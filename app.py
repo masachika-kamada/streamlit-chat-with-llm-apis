@@ -26,8 +26,8 @@ class LLMChatManager:
             "Groq": ["llama3-70b-8192", "llama3-8b-8192"],
         }
         self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
-        self.provider = None
-        self.model = None
+        self.provider = self.providers[0]
+        self.model = self.models[self.provider][0]
         self.temperature = 0
         self.image_url = None
         if "messages" not in st.session_state:
@@ -36,21 +36,26 @@ class LLMChatManager:
     def select(self):
         with st.sidebar:
             st.sidebar.title("🧠 LLM Chat")
-            self.provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
-            self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
-            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
-            self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
-            self.n_history = st.slider("Number of History", 1, 10, 8, 1)
-            image_data = paste(label="paste from clipboard")
+            with st.expander(f"Model Options"):
+                self.provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
+                self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
+                self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
 
-            if image_data is not None:
-                header, encoded = image_data.split(",", 1)
-                self.image_url = f"data:image/png;base64,{encoded}"
-                binary_data = base64.b64decode(encoded)
-                bytes_data = BytesIO(binary_data)
-                st.image(bytes_data, caption="Uploaded Image", use_column_width=True)
-            else:
-                st.write("No image uploaded yet.")
+            with st.expander("Prompt Options"):
+                self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=140)
+                self.n_history = st.slider("Number of History", 1, 10, 8, 1, help="Number of previous messages to consider")
+
+            with st.expander("Image Input Options", expanded=True):
+                st.warning("Only available with GPT-4o. Changing options temporarily hides chat, but it reappears after sending a message.", icon="⚠️")
+                self.use_image = st.toggle("Use Image Input", False)
+
+                image_data = paste(label="paste from clipboard")
+                if image_data is not None:
+                    header, encoded = image_data.split(",", 1)
+                    self.image_url = f"data:image/png;base64,{encoded}"
+                    binary_data = base64.b64decode(encoded)
+                    bytes_data = BytesIO(binary_data)
+                    st.image(bytes_data, use_column_width=True)
 
             self.clear_conversation_button()
 
@@ -93,7 +98,9 @@ def main():
     if user_input:
         llm = llm_chat_manager.get_llm_instance()
 
-        if llm_chat_manager.model == "gpt-4o" and llm_chat_manager.image_url is not None:
+        if llm_chat_manager.model == "gpt-4o" \
+                and llm_chat_manager.use_image \
+                and llm_chat_manager.image_url is not None:
             st.session_state.messages.append(HumanMessage(
                 content=[
                     {"type": "text", "text": user_input},
