@@ -40,6 +40,7 @@ class LLMChatManager:
             self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
             self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=150)
             self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
+            self.n_history = st.slider("Number of History", 1, 10, 8, 1)
             image_data = paste(label="paste from clipboard")
 
             if image_data is not None:
@@ -104,7 +105,13 @@ def main():
             st.session_state.messages.append(HumanMessage(content=user_input))
         display_chat_history()
 
-        response = display_stream(llm.stream(st.session_state.messages))
+        if len(st.session_state.messages) <= llm_chat_manager.n_history + 1:
+            input_messages = st.session_state.messages
+        else:
+            input_messages = [st.session_state.messages[0]] + st.session_state.messages[-llm_chat_manager.n_history:]
+        input_messages = st.session_state.messages \
+
+        response = display_stream(llm.stream(input_messages))
         st.session_state.messages.append(AIMessage(content=response))
 
 
