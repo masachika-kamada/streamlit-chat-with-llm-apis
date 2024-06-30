@@ -1,6 +1,5 @@
 [theme]
 base="dark"
-primaryColor="purple"
 
 [browser]
 serverAddress = "localhost"

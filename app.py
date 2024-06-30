@@ -99,6 +99,17 @@ def display_stream(generater):
 
 
 def main():
+    st.markdown(
+        """
+        <style>
+        body, div {
+            font-family: 'Source Sans Pro', sans-serif !important;
+            font-size: 16px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     llm_chat_manager = LLMChatManager()
     llm_chat_manager.select()
 
