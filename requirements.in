@@ -4,6 +4,7 @@ langchain
 langchain-cohere
 langchain-groq
 langchain-openai
+langchain-google-genai
 streamlit-authenticator
 st_img_pastebutton
 

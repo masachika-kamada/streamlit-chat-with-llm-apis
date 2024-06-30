@@ -8,6 +8,7 @@ import streamlit_authenticator as stauth
 from dotenv import load_dotenv
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_cohere import ChatCohere
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from langchain_openai import AzureChatOpenAI
 from st_img_pastebutton import paste
@@ -17,10 +18,11 @@ load_dotenv(Path(__file__).parent / ".env")
 
 class LLMChatManager:
     def __init__(self):
-        self.providers = ["OpenAI", "Cohere", "Groq"]
+        self.providers = ["OpenAI", "Google", "Cohere", "Groq"]
         self.models = {
             # デプロイ作成時、デプロイ名とモデル名が同じになるように設定
             "OpenAI": ["gpt-4o", "gpt-35-turbo-instruct"],
+            "Google": ["gemini-1.5-flash", "gemini-1.5-pro"],
             "Cohere": ["command-r-plus", "command-r", "command", \
                        "command-light", "command-nightly", "command-light-nightly"],
             "Groq": ["llama3-70b-8192", "llama3-8b-8192"],
@@ -36,28 +38,34 @@ class LLMChatManager:
     def select(self):
         with st.sidebar:
             st.sidebar.title("🧠 LLM Chat")
-            with st.expander(f"Model Options"):
-                self.provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
-                self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
-                self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
-
-            with st.expander("Prompt Options"):
-                self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=140)
-                self.n_history = st.slider("Number of History", 1, 10, 8, 1, help="Number of previous messages to consider")
-
-            with st.expander("Image Input Options", expanded=True):
-                st.warning("Only available with GPT-4o. Changing options temporarily hides chat, but it reappears after sending a message.", icon="⚠️")
-                self.use_image = st.toggle("Use Image Input", False)
-
-                image_data = paste(label="paste from clipboard")
-                if image_data is not None:
-                    header, encoded = image_data.split(",", 1)
-                    self.image_url = f"data:image/png;base64,{encoded}"
-                    binary_data = base64.b64decode(encoded)
-                    bytes_data = BytesIO(binary_data)
-                    st.image(bytes_data, use_column_width=True)
-
+            self._model_options()
+            self._prompt_options()
+            self._image_input_options()
             self.clear_conversation_button()
+
+    def _model_options(self):
+        with st.expander(f"Model Options"):
+            self.provider = st.radio("Select Provider", self.providers, on_change=self.init_messages)
+            self.model = st.selectbox("Select Model", self.models[self.provider], on_change=self.init_messages)
+            self.temperature = st.slider("Temperature", 0.0, 1.0, 0.0, 0.01)
+
+    def _prompt_options(self):
+        with st.expander("Prompt Options"):
+            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=140)
+            self.n_history = st.slider("Number of History", 1, 10, 8, 1, help="Number of previous messages to consider")
+
+    def _image_input_options(self):
+        with st.expander("Image Input Options", expanded=True):
+            st.warning("Only available with GPT-4o. Changing options temporarily hides chat, but it reappears after sending a message.", icon="⚠️")
+            self.use_image = st.toggle("Use Image Input", False)
+
+            image_data = paste(label="paste from clipboard")
+            if image_data is not None:
+                header, encoded = image_data.split(",", 1)
+                self.image_url = f"data:image/png;base64,{encoded}"
+                binary_data = base64.b64decode(encoded)
+                bytes_data = BytesIO(binary_data)
+                st.image(bytes_data, use_column_width=True)
 
     def clear_conversation_button(self):
         st.sidebar.button("Clear Conversation", on_click=self.init_messages)
@@ -66,12 +74,13 @@ class LLMChatManager:
         st.session_state.messages = [SystemMessage(content=self.system_prompt)]
 
     def get_llm_instance(self):
-        if self.provider == "OpenAI":
-            return AzureChatOpenAI(azure_deployment=self.model, temperature=self.temperature)
-        elif self.provider == "Groq":
-            return ChatGroq(model=self.model, temperature=self.temperature)
-        elif self.provider == "Cohere":
-            return ChatCohere(model=self.model, temperature=self.temperature)
+        llm_classes = {
+            "OpenAI": AzureChatOpenAI,
+            "Google": ChatGoogleGenerativeAI,
+            "Groq": ChatGroq,
+            "Cohere": ChatCohere
+        }
+        return llm_classes[self.provider](model=self.model, temperature=self.temperature)
 
 
 def display_chat_history():
@@ -90,6 +99,17 @@ def display_stream(generater):
 
 
 def main():
+    st.markdown(
+        """
+        <style>
+        body, div {
+            font-family: 'Source Sans Pro', sans-serif !important;
+            font-size: 16px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     llm_chat_manager = LLMChatManager()
     llm_chat_manager.select()
 
@@ -116,7 +136,6 @@ def main():
             input_messages = st.session_state.messages
         else:
             input_messages = [st.session_state.messages[0]] + st.session_state.messages[-llm_chat_manager.n_history:]
-        input_messages = st.session_state.messages \
 
         response = display_stream(llm.stream(input_messages))
         st.session_state.messages.append(AIMessage(content=response))
