@@ -21,7 +21,7 @@ class LLMChatManager:
         self.providers = ["OpenAI", "Google", "Cohere", "Groq"]
         self.models = {
             # デプロイ作成時、デプロイ名とモデル名が同じになるように設定
-            "OpenAI": ["gpt-4o", "gpt-35-turbo-instruct"],
+            "OpenAI": ["gpt-4o", "gpt-4", "gpt-35-turbo-instruct"],
             "Google": ["gemini-1.5-flash", "gemini-1.5-pro"],
             "Cohere": ["command-r-plus", "command-r", "command", \
                        "command-light", "command-nightly", "command-light-nightly"],
