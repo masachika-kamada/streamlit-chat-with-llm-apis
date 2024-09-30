@@ -1,9 +1,6 @@
 python-dotenv
 streamlit
 langchain
-langchain-cohere
-langchain-groq
 langchain-openai
-langchain-google-genai==1.0.6
 streamlit-authenticator==0.3.2
 st_img_pastebutton
