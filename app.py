@@ -17,8 +17,18 @@ class LLMChatManager:
     def __init__(self):
         self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
         self.model = "gpt-4o"
-        self.temperature = 0
-        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature)
+        # https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api/172683
+        self.mode = {
+            "Chatbot Responses": {"temperature": 0.5, "top_p": 0.5},
+            "Creative Writing": {"temperature": 0.7, "top_p": 0.8},
+            "Code Generation": {"temperature": 0.2, "top_p": 0.1},
+            "Code Comment Generation": {"temperature": 0.3, "top_p": 0.2},
+            "Exploratory Code Writing": {"temperature": 0.6, "top_p": 0.7}
+        }
+        self.selected_mode = list(self.mode.keys())[0]
+        self.temperature = self.mode[self.selected_mode]["temperature"]
+        self.top_p = self.mode[self.selected_mode]["top_p"]
+        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature, top_p=self.top_p)
         self.image_url = None
         if "messages" not in st.session_state:
             self.init_messages()
@@ -31,12 +41,18 @@ class LLMChatManager:
             self.clear_conversation_button()
 
     def _prompt_options(self):
-        with st.expander("Settings, Prompt"):
+        with st.expander("Settings", expanded=True):
             self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=140)
             self.n_history = st.slider("Number of History", 1, 14, 10, 1, help="Number of previous messages to consider")
+            self.selected_mode = st.radio("Mode", list(self.mode.keys()), on_change=self._update_llm)
+
+    def _update_llm(self):
+        self.temperature = self.mode[self.selected_mode]["temperature"]
+        self.top_p = self.mode[self.selected_mode]["top_p"]
+        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature, top_p=self.top_p)
 
     def _image_input_options(self):
-        with st.expander("Image Input", expanded=True):
+        with st.expander("Image Input", expanded=False):
             st.warning("Only available with GPT-4o. Changing options temporarily hides chat, but it reappears after sending a message.", icon="⚠️")
             self.use_image = st.toggle("Use Image Input", False)
 
