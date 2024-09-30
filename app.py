@@ -17,7 +17,6 @@ class LLMChatManager:
     def __init__(self):
         self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
         self.model = "gpt-4o"
-        # https://community.openai.com/t/cheat-sheet-mastering-temperature-and-top-p-in-chatgpt-api/172683
         self.mode = {
             "Chatbot Responses": {"temperature": 0.5, "top_p": 0.5},
             "Creative Writing": {"temperature": 0.7, "top_p": 0.8},
@@ -32,6 +31,8 @@ class LLMChatManager:
         self.image_url = None
         if "messages" not in st.session_state:
             self.init_messages()
+        if "rerender_chat" not in st.session_state:
+            st.session_state.rerender_chat = False
 
     def select(self):
         with st.sidebar:
@@ -42,19 +43,13 @@ class LLMChatManager:
 
     def _prompt_options(self):
         with st.expander("Settings", expanded=True):
-            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=140)
-            self.n_history = st.slider("Number of History", 1, 14, 10, 1, help="Number of previous messages to consider")
-            self.selected_mode = st.radio("Mode", list(self.mode.keys()), on_change=self._update_llm)
-
-    def _update_llm(self):
-        self.temperature = self.mode[self.selected_mode]["temperature"]
-        self.top_p = self.mode[self.selected_mode]["top_p"]
-        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature, top_p=self.top_p)
+            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=120, on_change=self._rerender)
+            self.n_history = st.slider("Number of History", 1, 14, 10, 1, help="Number of previous messages to consider", on_change=self._rerender)
+            self.selected_mode = st.radio("Mode", list(self.mode.keys()), on_change=self._update_and_rerender)
 
     def _image_input_options(self):
         with st.expander("Image Input", expanded=False):
-            st.warning("Only available with GPT-4o. Changing options temporarily hides chat, but it reappears after sending a message.", icon="⚠️")
-            self.use_image = st.toggle("Use Image Input", False)
+            self.use_image = st.toggle("Use Image Input", False, on_change=self._rerender)
 
             image_data = paste(label="paste from clipboard")
             if image_data is not None:
@@ -63,6 +58,19 @@ class LLMChatManager:
                 binary_data = base64.b64decode(encoded)
                 bytes_data = BytesIO(binary_data)
                 st.image(bytes_data, use_column_width=True)
+                self._rerender()
+
+    def _update_and_rerender(self):
+        self._update_llm()
+        self._rerender()
+
+    def _update_llm(self):
+        self.temperature = self.mode[self.selected_mode]["temperature"]
+        self.top_p = self.mode[self.selected_mode]["top_p"]
+        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature, top_p=self.top_p)
+
+    def _rerender(self):
+        st.session_state.rerender_chat = True
 
     def clear_conversation_button(self):
         st.sidebar.button("Clear Conversation", on_click=self.init_messages)
@@ -100,6 +108,10 @@ def main():
     )
     llm_chat_manager = LLMChatManager()
     llm_chat_manager.select()
+
+    if st.session_state.rerender_chat:
+        display_chat_history()
+        st.session_state.rerender_chat = False
 
     user_input = st.chat_input("Message...")
 
