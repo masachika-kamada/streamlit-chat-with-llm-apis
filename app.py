@@ -56,6 +56,10 @@ class LLMChatManager:
                 binary_data = base64.b64decode(encoded)
                 bytes_data = BytesIO(binary_data)
                 st.image(bytes_data, use_container_width=True)
+                # 画像のbase64 URLとbytes_dataの対応を保存
+                if "image_map" not in st.session_state:
+                    st.session_state["image_map"] = {}
+                st.session_state["image_map"][self.image_url] = bytes_data
                 # 新しい画像が貼り付けられた時だけrerender
                 if "image_pasted" not in st.session_state or st.session_state["image_pasted"] is False:
                     self._rerender()
@@ -94,7 +98,18 @@ def display_chat_history():
                 st.markdown(message["content"])
         elif message["role"] == "user":
             with st.chat_message("user"):
-                st.text(message["content"])
+                content = message["content"]
+                if isinstance(content, list):
+                    for item in content:
+                        if item.get("type") == "text":
+                            st.text(item.get("text", ""))
+                        elif item.get("type") == "image_url":
+                            url = item.get("image_url", {}).get("url")
+                            image_map = st.session_state.get("image_map", {})
+                            if url in image_map:
+                                st.image(image_map[url], width=600)
+                else:
+                    st.text(content)
         elif message["role"] == "system":
             # Optionally display system prompt
             pass
