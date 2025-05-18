@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
@@ -26,10 +28,10 @@ jobs:
         run: |
           python -m venv venv
           source venv/bin/activate
-
+      
       - name: Install dependencies
         run: pip install -r requirements.txt
-
+        
       # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
 
       - name: Zip artifact for deployment
@@ -51,6 +53,7 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
       - name: Download artifact from build job
@@ -61,13 +64,13 @@ jobs:
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
-
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B2C080A6557E412D8DCB4C1B9AECE628 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_76E0EC6B8E3146A29CE9669D3931E496 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_E32AA879715245D0ABD0F60582CD699B }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_4F08E0C5862E4E31B237F4FD6DFBE922 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C6EB7E310FAC4C1681C204DEA58564D4 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_2FA214EB970A44E2B9C319E92297FBD9 }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
@@ -75,3 +78,4 @@ jobs:
         with:
           app-name: 'llm-chat2'
           slot-name: 'Production'
+          
