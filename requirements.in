@@ -1,6 +1,5 @@
 python-dotenv
 streamlit
-langchain
 langchain-openai
 streamlit-authenticator
 st_img_pastebutton
@@ -14,3 +13,5 @@ st_img_pastebutton
 # 2. requirements.in の作成
 # 3. requirements.txt の生成: `pip-compile requirements.in`
 # 4. 生成された requirements.txt の使用: `pip install -r requirements.txt`
+
+# pip freeze > requirements.txt

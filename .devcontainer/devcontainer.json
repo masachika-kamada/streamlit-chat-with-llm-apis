@@ -17,8 +17,9 @@
                 "christian-kohler.path-intellisense",
                 "shardulm94.trailing-spaces",
                 "yzhang.markdown-all-in-one",
+                "saoudrizwan.claude-dev"
             ]
         }
     },
-    "postCreateCommand": "pip install --user -r requirements.txt"
+    "postCreateCommand": "pip install --upgrade pip && pip install --user -r requirements.txt"
 }
