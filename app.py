@@ -6,7 +6,6 @@ from pathlib import Path
 import streamlit as st
 import streamlit_authenticator as stauth
 from dotenv import load_dotenv
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI
 from st_img_pastebutton import paste
 
@@ -16,7 +15,6 @@ load_dotenv(Path(__file__).parent / ".env")
 class LLMChatManager:
     def __init__(self):
         self.system_prompt = "あなたは愉快なAIです。ユーザの入力に日本語で答えてください"
-        self.model = "gpt-4o"
         self.mode = {
             "Chatbot Responses": {"temperature": 0.5, "top_p": 0.5},
             "Creative Writing": {"temperature": 0.7, "top_p": 0.8},
@@ -27,7 +25,7 @@ class LLMChatManager:
         self.selected_mode = list(self.mode.keys())[0]
         self.temperature = self.mode[self.selected_mode]["temperature"]
         self.top_p = self.mode[self.selected_mode]["top_p"]
-        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature, top_p=self.top_p)
+        self.llm = AzureChatOpenAI(temperature=self.temperature, top_p=self.top_p)
         self.image_url = None
         if "messages" not in st.session_state:
             self.init_messages()
@@ -67,7 +65,7 @@ class LLMChatManager:
     def _update_llm(self):
         self.temperature = self.mode[self.selected_mode]["temperature"]
         self.top_p = self.mode[self.selected_mode]["top_p"]
-        self.llm = AzureChatOpenAI(model=self.model, temperature=self.temperature, top_p=self.top_p)
+        self.llm = AzureChatOpenAI(temperature=self.temperature, top_p=self.top_p)
 
     def _rerender(self):
         st.session_state.rerender_chat = True
@@ -76,17 +74,25 @@ class LLMChatManager:
         st.sidebar.button("Clear Conversation", on_click=self.init_messages)
 
     def init_messages(self):
-        st.session_state.messages = [SystemMessage(content=self.system_prompt)]
+        st.session_state.messages = [
+            {
+                "role": "system",
+                "content": self.system_prompt
+            }
+        ]
 
 
 def display_chat_history():
     for message in st.session_state.messages:
-        if isinstance(message, AIMessage):
+        if message["role"] == "assistant":
             with st.chat_message("assistant"):
-                st.markdown(message.content)
-        elif isinstance(message, HumanMessage):
+                st.markdown(message["content"])
+        elif message["role"] == "user":
             with st.chat_message("user"):
-                st.text(message.content)
+                st.text(message["content"])
+        elif message["role"] == "system":
+            # Optionally display system prompt
+            pass
 
 
 def display_stream(generater):
@@ -117,15 +123,19 @@ def main():
 
     if user_input:
         if llm_chat_manager.use_image and llm_chat_manager.image_url is not None:
-            st.session_state.messages.append(HumanMessage(
-                content=[
+            st.session_state.messages.append({
+                "role": "user",
+                "content": [
                     {"type": "text", "text": user_input},
                     {"type": "image_url", "image_url": {"url": llm_chat_manager.image_url}}
                 ]
-            ))
+            })
             llm_chat_manager.image_url = None
         else:
-            st.session_state.messages.append(HumanMessage(content=user_input))
+            st.session_state.messages.append({
+                "role": "user",
+                "content": user_input
+            })
         display_chat_history()
 
         if len(st.session_state.messages) <= llm_chat_manager.n_history + 1:
@@ -133,8 +143,23 @@ def main():
         else:
             input_messages = [st.session_state.messages[0]] + st.session_state.messages[-llm_chat_manager.n_history:]
 
-        response = display_stream(llm_chat_manager.llm.stream(input_messages))
-        st.session_state.messages.append(AIMessage(content=response))
+        # LLM呼び出し時の例外処理（コンテンツフィルター等）
+        try:
+            response = display_stream(llm_chat_manager.llm.stream(input_messages))
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": response
+            })
+        except Exception as e:
+            # Azure OpenAIのコンテンツフィルター違反など
+            import traceback
+            error_message = str(e)
+            if "content management policy" in error_message or "content_filter" in error_message:
+                st.error("内容が不適切なため応答できませんでした（Azure OpenAIのコンテンツフィルターによりブロックされました）。")
+            else:
+                st.error(f"エラーが発生しました: {error_message}")
+            # 必要なら詳細なエラーをログ出力
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
