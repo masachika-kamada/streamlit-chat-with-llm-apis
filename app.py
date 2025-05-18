@@ -41,7 +41,8 @@ class LLMChatManager:
 
     def _prompt_options(self):
         with st.expander("Settings", expanded=True):
-            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=120, on_change=self._rerender)
+            self.system_prompt = st.text_area("System Prompt", self.system_prompt, height=120,
+                                              key="system_prompt", on_change=self._set_system_prompt_and_rerender)
             self.n_history = st.slider("Number of History", 1, 14, 10, 1, help="Number of previous messages to consider", on_change=self._rerender)
             self.selected_mode = st.radio("Mode", list(self.mode.keys()), on_change=self._update_and_rerender)
 
@@ -66,6 +67,11 @@ class LLMChatManager:
                     st.session_state["image_pasted"] = True
             else:
                 st.session_state["image_pasted"] = False
+
+    def _set_system_prompt_and_rerender(self):
+        st.session_state.messages[0]["content"] = st.session_state["system_prompt"]
+        self._rerender()
+
 
     def _update_and_rerender(self):
         self._update_llm()
@@ -107,7 +113,7 @@ def display_chat_history():
                             url = item.get("image_url", {}).get("url")
                             image_map = st.session_state.get("image_map", {})
                             if url in image_map:
-                                st.image(image_map[url], width=600)
+                                st.image(image_map[url])
                 else:
                     st.text(content)
         elif message["role"] == "system":
