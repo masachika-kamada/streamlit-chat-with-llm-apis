@@ -55,8 +55,13 @@ class LLMChatManager:
                 self.image_url = f"data:image/png;base64,{encoded}"
                 binary_data = base64.b64decode(encoded)
                 bytes_data = BytesIO(binary_data)
-                st.image(bytes_data, use_column_width=True)
-                self._rerender()
+                st.image(bytes_data, use_container_width=True)
+                # 新しい画像が貼り付けられた時だけrerender
+                if "image_pasted" not in st.session_state or st.session_state["image_pasted"] is False:
+                    self._rerender()
+                    st.session_state["image_pasted"] = True
+            else:
+                st.session_state["image_pasted"] = False
 
     def _update_and_rerender(self):
         self._update_llm()
