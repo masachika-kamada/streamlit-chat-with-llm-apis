@@ -1,10 +1,8 @@
 import base64
-import os
 from io import BytesIO
 from pathlib import Path
 
 import streamlit as st
-import streamlit_authenticator as stauth
 from dotenv import load_dotenv
 from langchain_openai import AzureChatOpenAI
 from st_img_pastebutton import paste
@@ -127,17 +125,6 @@ def display_stream(generater):
 
 
 def main():
-    st.markdown(
-        """
-        <style>
-        body, div {
-            font-family: 'Source Sans Pro', sans-serif !important;
-            font-size: 16px !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
     llm_chat_manager = LLMChatManager()
     llm_chat_manager.select()
 
@@ -195,18 +182,4 @@ if __name__ == "__main__":
         layout="wide",
     )
 
-    authenticator = stauth.Authenticate(
-        {"usernames": {
-            os.getenv("LOGIN_USERNAME"): {
-                "name": os.getenv("LOGIN_NAME"),
-                "password": os.getenv("LOGIN_PASSWORD")}}},
-        "", "", 30,
-    )
-    authenticator.login()
-
-    if st.session_state["authentication_status"]:
-        main()
-    elif st.session_state["authentication_status"] is False:
-        st.error("Username/password is incorrect")
-    elif st.session_state["authentication_status"] is None:
-        st.warning("Please enter your username and password")
+    main()

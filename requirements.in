@@ -1,7 +1,6 @@
 python-dotenv
 streamlit
 langchain-openai
-streamlit-authenticator
 st_img_pastebutton
 
 # pip-tools:
